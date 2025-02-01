@@ -15,47 +15,57 @@ def initialize_components():
 
 # RAG pipeline
 def rag_pipeline(document, question, model_name, embeddings, text_splitter):
+    progress = st.progress(0)
+    status = st.status("Initializing RAG pipeline...")
     start_time = time.time()
 
     # Step 1: Split document into chunks
-    with st.spinner("Splitting document into chunks..."):
+    with status.container():
+        st.write("**Splitting document into chunks**")
         chunks = text_splitter.split_text(document)
-    st.success("Document split into chunks!")
+        progress.progress(25)
+        time.sleep(0.5)
 
-    # Step 2: Create vector store for retrieval
-    with st.spinner("Creating vector store..."):
+        # Step 2: Create vector store for retrieval
+        st.write("**Creating vector store**")
         vector_store = FAISS.from_texts(chunks, embeddings)
-    st.success("Vector store created!")
+        progress.progress(50)
+        time.sleep(0.5)
 
-    # Step 3: Retrieve relevant chunks based on the query
-    with st.spinner("Retrieving relevant context..."):
+        # Step 3: Retrieve relevant chunks based on the query
+        st.write("**Retrieving relevant context**")
         retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-    st.success("Relevant context retrieved!")
+        progress.progress(75)
+        time.sleep(0.5)
 
-    # Step 4: Generate answer using retrieved context
-    with st.spinner("Generating answer using RAG..."):
+        # Step 4: Generate answer using retrieved context
+        st.write("**Generating answer using RAG**")
         llm = Ollama(model=model_name)
         qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
         answer = qa_chain.run(question)
-    st.success("Answer generated using RAG!")
+        progress.progress(100)
 
     end_time = time.time()
     return answer, end_time - start_time
 
 # CAG pipeline
 def cag_pipeline(document, question, model_name):
+    progress = st.progress(0)
+    status = st.status("Initializing CAG pipeline...")
     start_time = time.time()
 
     # Step 1: Preload the entire document into the LLM context
-    with st.spinner("Preloading document into LLM context..."):
+    with status.container():
+        st.write("**Preloading document into LLM context**")
         llm = Ollama(model=model_name)
         prompt = f"Document:\n{document}\n\nQuestion:\n{question}\nAnswer:"
-    st.success("Document preloaded into LLM context!")
+        progress.progress(50)
+        time.sleep(0.5)
 
-    # Step 2: Generate answer directly from the full document context
-    with st.spinner("Generating answer using CAG..."):
+        # Step 2: Generate answer directly from the full document context
+        st.write("**Generating answer using CAG**")
         answer = llm(prompt)
-    st.success("Answer generated using CAG!")
+        progress.progress(100)
 
     end_time = time.time()
     return answer, end_time - start_time
@@ -69,7 +79,7 @@ uploaded_file = st.file_uploader("Upload a document (TXT format)", type=["txt"])
 question = st.text_input("Enter your question:")
 model_choice = st.selectbox(
     "Select the model to use:",
-    ["llama-1b", "deepseek-r1:1.5b"]
+    ["llama3.2:1b", "deepseek-r1:1.5b"]
 )
 
 if uploaded_file and question:
@@ -113,3 +123,4 @@ if uploaded_file and question:
     }
     
     st.table(comparison_data)
+
